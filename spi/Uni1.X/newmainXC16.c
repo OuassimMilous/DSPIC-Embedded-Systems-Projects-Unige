@@ -196,7 +196,7 @@ void transmit_SPI1(unsigned char msg) {
     SPI1BUF = msg;
     
     //avoid overrun
-    unsigned char trash = recieve_SPI1();
+  //  unsigned char trash = recieve_SPI1();
    
 }
 

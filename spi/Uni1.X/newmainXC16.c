@@ -3,7 +3,7 @@
 
 #define TIMER1 1
 #define TIMER2 2
-#define CS TRISDbits.TRISD6
+#define CS LATDbits.LATD6
 
 // Function prototypes
 void tmr_setup_period(int timer, int ms);
@@ -12,7 +12,7 @@ void tmr_wait_ms(int timer, int ms);
 void init_SPI1();
 void init_UART1();
 void print_UART1(unsigned char msg);
-void transmit_SPI1(unsigned char msg);
+unsigned char transmit_SPI1(unsigned char msg);
 unsigned char receive_SPI1(unsigned char addr);
 void write_SPI1(unsigned char addr, unsigned char msg);
 unsigned char read_SPI1(unsigned char addr);
@@ -20,35 +20,39 @@ unsigned char read_SPI1(unsigned char addr);
 int value_from_chip;
     
 int main(void) {
-    
+    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
+
     // start
 //    print_UART1(58);
 
+    TRISAbits.TRISA0 = 0;
+    TRISGbits.TRISG9 = 0;
     // configuring the SPI
     init_SPI1();
     
     // configuring the UART
     init_UART1(); 
     
-    // selecting the magnetometer
-    CS = 0; 
-
+    LATAbits.LATA0 = 1;
+    LATGbits.LATG9 = 1;
     //sleep mode
     write_SPI1(0x4B, 0x01);
-
+    LATAbits.LATA0 = 0;
     //sleep for 2 ms
-    tmr_wait_ms(TIMER1,2);
-
+    tmr_wait_ms(TIMER1,5);
+    
     //active mode
     write_SPI1(0x4C,0x00);
-
+    LATAbits.LATA0 = 1;
+    LATGbits.LATG9 = 0;
     // read ID
     value_from_chip = read_SPI1(0x40);
+    LATAbits.LATA0 = 1;
+    LATGbits.LATG9 = 1;
    
     // printing the received value
     print_UART1(value_from_chip);
 
-    CS = 1;
 
     while (1);
 
@@ -140,8 +144,9 @@ void init_SPI1(){
     //configuring the SPI
     SPI1CON1bits.MSTEN = 1; // master mode
     SPI1CON1bits.MODE16 = 0; // 8?bit mode
-    SPI1CON1bits.PPRE = 3; // 1:1 primary prescaler
-    SPI1CON1bits.SPRE = 3; // 5:1 secondary prescaler
+    SPI1CON1bits.PPRE = 0; // 1:1 primary prescaler
+    SPI1CON1bits.SPRE = 5; // 5:1 secondary prescaler
+    SPI1CON1bits.CKP = 1;
     SPI1STATbits.SPIEN = 1; // enable SPI
  
     //setting up the CS and making sure theyre not selected
@@ -180,6 +185,7 @@ void init_UART1(){
 }
 
 void print_UART1(unsigned char msg){
+//    while(!U1STA.TRMT)
     U1TXREG = msg;
 }
 
@@ -191,22 +197,26 @@ unsigned char recieve_SPI1() {
     return data;
 }
 
-void transmit_SPI1(unsigned char msg) {
+unsigned char transmit_SPI1(unsigned char msg) {
     while (SPI1STATbits.SPITBF == 1);
     SPI1BUF = msg;
-    
     //avoid overrun
-  //  unsigned char trash = recieve_SPI1();
-   
+    unsigned char trash = recieve_SPI1(); 
+    return trash;
 }
 
-void write_SPI1(unsigned char addr, unsigned char msg) {
-    transmit_SPI1(addr);
+void write_SPI1(unsigned char addr, unsigned char msg) {  
+    CS = 0; 
+    transmit_SPI1(addr); // force msb to be 0
     transmit_SPI1(msg);
+    CS = 1;
 }
 
 
 unsigned char read_SPI1 (unsigned char addr) {
-    transmit_SPI1(addr | 0x80); // setting msb to 1
-    return recieve_SPI1();
+    CS = 0; 
+    transmit_SPI1(addr | 0x80); // force msb to 1
+     unsigned char reced  = transmit_SPI1(0x00);
+    CS = 1;
+    return reced;
 }

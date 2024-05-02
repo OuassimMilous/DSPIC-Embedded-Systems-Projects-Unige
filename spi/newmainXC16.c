@@ -33,7 +33,7 @@ int main(void) {
 
         print_buffer_UART1(magx);
 
-        int ret = tmr_wait_period(TIMER1);    
+        int ret = tmr_wait_period(TIMER2);    
     }
 
     return 0;

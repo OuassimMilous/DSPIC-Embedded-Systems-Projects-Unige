@@ -32,6 +32,8 @@ int tmr_wait_period(int timer);
 void tmr_wait_ms(int timer, int ms);
 void init_UART1();
 void print_UART1(unsigned char msg);
+void print_buffer_UART1(char buffer[]);
+
 void init_SPI1();
 void write_SPI1(unsigned char addr, unsigned char msg);
 unsigned char read_SPI1(unsigned char addr);

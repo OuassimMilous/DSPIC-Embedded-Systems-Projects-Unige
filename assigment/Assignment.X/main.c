@@ -1,14 +1,14 @@
 #include "xc.h"
 #include "tools.h"
-
-int main(void){
-    
-    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
     int x,y,z,sumx = 0, sumy = 0, sumz = 0,i=0;
-    
     int xarr[5];
     int yarr[5];
     int zarr[5];
+int main(void){
+    
+    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
+    
+
     //initializing spi
     init_SPI1(); 
     
@@ -23,10 +23,8 @@ int main(void){
 
     tmr_setup_period(TIMER1,40);
     tmr_setup_period(TIMER2,10);
-//    tmr_setup_period(TIMER3,1000);
     
     while(1){
-        while(!tmr_check_period(TIMER2)){ //????
 
             tmr_wait_ms(TIMER3,7);
             
@@ -36,7 +34,7 @@ int main(void){
                 zarr[i] = mag_get_z();
                 i==5? i=0: i++;
             }
-
+            
             if(i==5){
                 sumx = 0;
                 sumy = 0;
@@ -60,8 +58,7 @@ int main(void){
 
 
             }
-
-        }
+            tmr_wait_period(TIMER2);
     }
 
     return 0;

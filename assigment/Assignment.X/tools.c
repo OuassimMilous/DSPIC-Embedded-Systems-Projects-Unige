@@ -1,22 +1,30 @@
 #include "xc.h"
 #include "tools.h"
 
-static void tmr_setup_period(int timer, int ms) {
+void tmr_setup_period(int timer, int ms) {
     if (timer == 1) {
         TMR1 = 0;
         PR1 = (ms / 1000.0)*281250;
         T1CONbits.TCKPS = 0b11;
         T1CONbits.TON = 1;
-    } else {
+    } else if(timer == 2){
+        
         TMR2 = 0;
         PR2 = (ms / 1000.0)*281250;
         T2CONbits.TCKPS = 0b11;
         T2CONbits.TON = 1;
 
+    } else{
+        TMR3 = 0;
+        PR3 = (ms / 1000.0)*281250;
+        T3CONbits.TCKPS = 0b11;
+        T3CONbits.TON = 1;
     }
+    
+
 }
 
-static int tmr_wait_period(int timer) {
+int tmr_wait_period(int timer) {
     int x;
     if (timer == 1) {
         x = IFS0bits.T1IF;
@@ -24,15 +32,44 @@ static int tmr_wait_period(int timer) {
         };
         IFS0bits.T1IF = 0;
 
-    } else {
+    } else if(timer == 2){
         x = IFS0bits.T2IF;
         while (!IFS0bits.T2IF) {
         };
         IFS0bits.T2IF = 0;
+    }else{
+        x = IFS0bits.T3IF;
+        while (!IFS0bits.T3IF) {
+        };
+        IFS0bits.T3IF = 0;
+    }
+    
+    return x;
+}
+
+int tmr_check_period(int timer) {
+    int x;
+    if (timer == 1) {
+        x = IFS0bits.T1IF;
+        if (IFS0bits.T1IF) {
+            IFS0bits.T1IF = 0;
+        };
+
+    } else if(timer == 2){
+        x = IFS0bits.T2IF;
+        if (IFS0bits.T2IF) {
+            IFS0bits.T2IF = 0;
+        };
+    }else{
+        x = IFS0bits.T3IF;
+        if (IFS0bits.T3IF) {
+            IFS0bits.T3IF = 0;
+        };
     }
     return x;
 
 }
+
 
 void tmr_wait_ms(int timer,int ms) {
 
@@ -77,6 +114,26 @@ void tmr_wait_ms(int timer,int ms) {
         T2CONbits.TON = 1; // Enable Timer2
         tmr_wait_period(TIMER2);
         T2CONbits.TON = 0;
+    }else{
+        T3CONbits.TON = 0; // Disable Timer2 during configuration
+        T3CONbits.TCS = 0; // Select internal clock (Fosc/4)
+        T3CONbits.TCKPS = 0b11; // Set prescaler to 1:256
+        TMR2 = 0; // Clear Timer2 value
+
+        // Adjust the period register and handle overflow
+        while (ticks > 65535) {
+            ticks -= 65535;
+            PR3 = 65535; // Set maximum value for Timer3 period
+            T3CONbits.TON = 1; // Enable Timer3
+            // Wait for Timer2 period to complete
+            tmr_wait_period(TIMER3);
+
+        }
+        PR3 = (unsigned int) ticks; // Set remaining ticks as period register
+        T3CONbits.TON = 1; // Enable Timer3
+        tmr_wait_period(TIMER3);
+        T3CONbits.TON = 0;
+  
     }
 }
 
@@ -125,8 +182,16 @@ void init_UART1(){
 }
 
 void print_UART1(unsigned char msg){
-//    while(!U1STA.TRMT)
+//    while(!U1STA.TRMT);
     U1TXREG = msg;
+}
+
+void print_buffer_UART1(char buffer[]) {
+    int j = 0;
+    while (buffer[j] != '\0') {
+        U1TXREG = buffer[j];
+        j++;
+    }
 }
 
 
@@ -147,7 +212,7 @@ static unsigned char transmit_SPI1(unsigned char msg) {
 
 void write_SPI1(unsigned char addr, unsigned char msg) {  
     CS = 0; 
-    transmit_SPI1(addr); // force msb to be 0
+    transmit_SPI1(addr);
     transmit_SPI1(msg);
     CS = 1;
 }
@@ -159,4 +224,49 @@ unsigned char read_SPI1 (unsigned char addr) {
      unsigned char reced  = transmit_SPI1(0x00);
     CS = 1;
     return reced;
+}
+
+void setup_mag(){
+    
+    //sleep mode
+    write_SPI1(MAGSLEEPMODE, 0x01);
+
+    //sleep for 2 ms
+    tmr_wait_ms(TIMER1,2);
+    
+    //active mode
+    write_SPI1(MAGOPMODE,0x00);
+}
+
+int join_msb_lsb(unsigned char lsb, unsigned char msb){
+    return (msb << 8) | lsb;
+}
+
+int mag_get_x(){
+    unsigned char lsb = read_SPI1(MAGXLSB);
+    unsigned char msb = read_SPI1(MAGXMSB);
+   
+    lsb = (lsb & 0b11111000) ;// masking
+    int x = join_msb_lsb(lsb,msb); // merging the lsb and the msb
+    x /=8;
+    return x;
+}
+
+int mag_get_y(){
+    unsigned char lsb = read_SPI1(MAGYLSB);
+    unsigned char msb = read_SPI1(MAGYMSB);
+    lsb = (lsb & 0b11111000) ;// masking
+    int y = join_msb_lsb(lsb,msb); // merging the lsb and the msb
+    y /= 8; // removing
+
+    return y;
+}
+int mag_get_z(){
+    unsigned char lsb = read_SPI1(MAGYLSB);
+    unsigned char msb = read_SPI1(MAGYMSB);
+    lsb = (lsb & 0b11111000) ;// masking
+    int z = join_msb_lsb(lsb,msb); // merging the lsb and the msb
+    z /= 2; // removing
+
+    return z;
 }

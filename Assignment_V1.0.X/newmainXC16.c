@@ -8,22 +8,23 @@
 
 #include "xc.h"
 #include"tools.h"
+#include <stdio.h>
 
-#define BUFFER_SIZE 11
+#define BUFFER_SIZE 22
 
 
 int i = 0;
 int j = 0;
 int jj = 0;
-int c[7] = {1, 2, 3, 4, 5, 6, 7};
-int recx, recy, recz;
+//nt c[7] = {1, 2, 3, 4, 5, 6, 7};
+int recx = 0, recy = 0, recz = 0;
 
 
 
 //////////////////////////////////////
 
 typedef struct {
-    int buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE];
     int head;
     int tail;
     int count;
@@ -51,7 +52,7 @@ int isFull(CircularBuffer *cb) {
 
 // Enqueue an element into the circular buffer
 
-void enqueue(CircularBuffer *cb, int value) {
+void enqueue(CircularBuffer *cb, char value) {
     if (isFull(cb)) {
 
 
@@ -64,7 +65,7 @@ void enqueue(CircularBuffer *cb, int value) {
 
 // Dequeue an element from the circular buffer
 
-int dequeue(CircularBuffer *cb) {
+char dequeue(CircularBuffer *cb) {
     if (isEmpty(cb)) {
         return -1; // Assuming -1 represents an error condition
     }
@@ -182,48 +183,70 @@ int main(void) {
     tmr_setup_period(TIMER1, 10);
 
 
-    j = 0;
+
     while (1) {
         tmr_wait_ms(TIMER2, 7);
 
-        //        while (j = 4) {
+        while (j == 4) {
+            //
+            //            recx = recx + mag_get_x();
+            //            recy = recy + mag_get_y();
+            //            recz = recz + mag_get_z();
+            
+            //
+            recx=mag_get_x()/5+recx;
+            recy=mag_get_y()/5+recy;
+            recz=mag_get_z()/5+recz;
+            j = 0;
+        }
         //
-        //            recx = recx + mag_get_x();
-        //            recy = recy + mag_get_y();
-        //            recz = recz + mag_get_z();
-        //
-        //            j = 0;
-        //        }
-        //
-        //        recx = recx / 5;
-        //        recy = recy / 5;
-        //        recz = recz / 5;
 
-        //
-        //        jj = 0;
+
+
 
 
         if (jj == 20) {
+     
+            //                    recx = recx / 5;
+            //                    recy = recy / 5;
+            //                    recz = recz / 5;
             //IEC0bits.U1TXIE = 0;
-            enqueue(&cb, 1);
+
+//            
+//           
+//
+//            enqueue(&cb,recx);
+//            // U1TXREG = dequeue(&cb);
+//            enqueue(&cb, recy);
+//            //U1TXREG = dequeue(&cb);
+//            enqueue(&cb,recz);
+//            enqueue(&cb, 2);
+//            enqueue(&cb, 2);
+//            enqueue(&cb, 2);
+//
+//            
+            
+  
+            enqueue(&cb,'$');
             U1TXREG = dequeue(&cb);
-         
-            enqueue(&cb, 6);
-            // U1TXREG = dequeue(&cb);
-               enqueue(&cb, 6);
-            //U1TXREG = dequeue(&cb);
-            enqueue(&cb, 6);
-            enqueue(&cb, 6);
-            enqueue(&cb, 6);
-            enqueue(&cb, 6);
-
-
-            //U1TXREG = dequeue(&cb);
+            char msg[20];
+            sprintf(msg,"MAG,%d,%d,%d*",recx,recy,recz);
+            int c = 0;
+            do{
+                enqueue(&cb,msg[c]);
+                c++;
+            }while(msg[c-1]!='*');
+             
+//           U1TXREG = 0x2A;
             jj = 0;
 
             // LATAbits.LATA0 = !LATAbits.LATA0;
+
+            recx = 0;
+            recy = 0;
+            recz = 0;
         }
-       
+
 
 
 
@@ -234,7 +257,7 @@ int main(void) {
 
 
         tmr_wait_period(TIMER1);
-        j = 1;
+        j++;
         jj++;
 
 

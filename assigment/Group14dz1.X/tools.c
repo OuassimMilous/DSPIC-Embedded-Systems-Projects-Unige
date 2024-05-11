@@ -268,7 +268,7 @@ int mag_get_x() {
     x /= 8; // deleting the first unnecessary first 0s
     
     //fixing signs and returning the data
-    return twosComplementToDecimal(x, 16);
+    return twosComplementToDecimal(x, 13);
 }
 
 // a function that gets the y axis value
@@ -281,19 +281,19 @@ int mag_get_y() {
     y /= 8;  // deleting the first unnecessary first 0s
 
     //fixing signs and returning the data
-    return twosComplementToDecimal(y, 16);
+    return twosComplementToDecimal(y, 13);
 }
 
 // a function that gets the z axis value
 int mag_get_z() {
     int lsb = read_SPI1(MAGZLSB);
     int msb = read_SPI1(MAGZMSB);
-    lsb = (lsb & 0b11111000); // masking
+    lsb = (lsb & 0b11111100); // masking
     int z = join_msb_lsb(lsb, msb); // merging the lsb and the msb
-    z /= 2; // deleting the first unnecessary first 0s
+    z /= 4; // deleting the first unnecessary first 0s
 
     //fixing signs and returning the data
-    return twosComplementToDecimal(z, 16);
+    return twosComplementToDecimal(z, 14);
 }
 
 // Initialize the circular buffer

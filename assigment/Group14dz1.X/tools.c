@@ -278,9 +278,9 @@ int16_t mag_get_y() {
 int16_t mag_get_z() {
     int16_t lsb = read_SPI1(MAGZLSB);
     int16_t msb = read_SPI1(MAGZMSB);
-    lsb = (lsb & 0b11111100); // masking
+    lsb = (lsb & 0b11111110); // masking
     int16_t z = join_msb_lsb(lsb, msb); // merging the lsb and the msb
-    z /= 4; // deleting the first unnecessary first 0s
+    z /= 2; // deleting the first unnecessary first 0s
 
     //fixing signs and returning the data
     return z;

@@ -8,7 +8,7 @@
 #define TIMER1 1
 #define TIMER2 2
 #define CS LATDbits.LATD6
-#define BUFFER_SIZE 50
+#define BUFFER_SIZE 37
 
 //defining registers
 
@@ -40,9 +40,9 @@ typedef struct {
 
 
 // Function prototypes
-void tmr_setup_period(int timer, int ms);
-int tmr_wait_period(int timer);
-void tmr_wait_ms(int timer, int ms);
+void tmr_setup_period(int8_t timer, int ms);
+int tmr_wait_period(int8_t timer);
+void tmr_wait_ms(int8_t timer, int ms);
 void init_UART1();
 void print_UART1(unsigned char msg);
 void print_buffer_UART1(char buffer[]);
@@ -50,9 +50,9 @@ void init_SPI1();
 void write_SPI1(unsigned char addr, unsigned char msg);
 unsigned char read_SPI1(unsigned char addr);
 void setup_mag();
-int mag_get_x();
-int mag_get_y();
-int mag_get_z();
+int16_t mag_get_x();
+int16_t mag_get_y();
+int16_t mag_get_z();
 void initCircularBuffer(CircularBuffer *cb);
 int isEmpty(CircularBuffer *cb);
 int isFull(CircularBuffer *cb);

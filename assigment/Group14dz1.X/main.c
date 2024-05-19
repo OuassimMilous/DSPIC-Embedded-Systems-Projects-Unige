@@ -42,8 +42,8 @@ int main(void) {
     init_UART1();
     
     //enabling the TX interrupt, it is triggered when UART is available for printing
-    U1STAbits.UTXISEL0 = 0b0;
-    U1STAbits.UTXISEL1 = 0b0;
+    U1STAbits.UTXISEL0 = 0;
+    U1STAbits.UTXISEL1 = 0;
     IEC0bits.U1TXIE = 1;
     
     //setting up the period to work at a 100Hz rate
@@ -53,20 +53,23 @@ int main(void) {
         algorithm();
 
         // the code inside the if condition works at the rate of 25Hz
-        if (counter10ms == 4) {
+        if (counter10ms % 4 == 0) {
             // getting the X,Y, and Z data from the magnetometer and calculates the average of every 5 values
             magX = mag_get_x() / 5 + magX;
             magY = mag_get_y() / 5 + magY;
             magZ = mag_get_z() / 5 + magZ;
+            
         }
         
         // the code inside the if condition works at the rate of 5Hz
         if (counter10ms == 20) {
             // we calculate the angle to the magnetic north then we prepare the String that needs to be printed
-            sprintf(msg, "$MAG,%d,%d,%d*, $YAW,%f* ", magX, magY, magZ, atan2(magY,magX) * 180.0 / M_PI);
+            sprintf(msg, "$MAG,%d,%d,%d*, $YAW,%.3f*", magX, magY, magZ, atan2(magY,magX) * 180.0 / M_PI);
             
             // we queue all the characters of the string to be printed to the UART
             int c = 0;
+            //we disable the TX interrupt flag to make sure won't have an interrupt while updating the buffer.
+            IEC0bits.U1TXIE = 0;
             do {
                 enqueue(&cb, msg[c]);
                 c++;
@@ -75,6 +78,9 @@ int main(void) {
             // separating prints by a space
             enqueue(&cb, ' ');
             
+            //we re-enable the interrupt when we are out of critical area
+            IEC0bits.U1TXIE = 1;
+
             // we force the first print out to make sure our interrupts will be triggered correctly
             print_UART1(dequeue(&cb));
             

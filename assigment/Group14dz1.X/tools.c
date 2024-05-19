@@ -1,8 +1,8 @@
 #include "xc.h"
 #include "tools.h"
 
-// a functino to set up a period for a timer
-void tmr_setup_period(int timer, int ms) {
+// a function to set up a period for a timer
+void tmr_setup_period(int8_t timer, int ms) {
     //selecting the timer
     switch (timer) {
         case 1:
@@ -30,7 +30,7 @@ void tmr_setup_period(int timer, int ms) {
 }
 
 // a function that waits until the set period has fully passed
-int tmr_wait_period(int timer) {
+int tmr_wait_period(int8_t timer) {
     
     // declaring a variable to check if the deadline is missed or not
     int isNotMissed;
@@ -60,7 +60,7 @@ int tmr_wait_period(int timer) {
 }
 
 // a wait function based on timers
-void tmr_wait_ms(int timer, int ms) {
+void tmr_wait_ms(int8_t timer, int ms) {
     
     // calculating the number of ticks using unsigned long long to support larger values
     unsigned long long ticks = (ms / 1000.0)*281250; 
@@ -177,14 +177,14 @@ void print_UART1(unsigned char msg) {
     U1TXREG = msg;
 }
 
-// a function to print multiple character through UART
-void print_buffer_UART1(char buffer[]) {
-    int j = 0;
-    while (buffer[j] != '\0') {
-        print_UART1(buffer[j]);
-        j++;
-    }
-}
+//// a function to print multiple character through UART
+//void print_buffer_UART1(char buffer[]) {
+//    int j = 0;
+//    while (buffer[j] != '\0') {
+//        print_UART1(buffer[j]);
+//        j++;
+//    }
+//}
 
 // a function to recieve one char from SPI
 static unsigned char recieve_SPI1() {
@@ -243,57 +243,47 @@ void setup_mag() {
 }
 
 // a function that joins two characters
-int join_msb_lsb(unsigned char lsb, unsigned char msb) {
+int16_t join_msb_lsb(unsigned char lsb, unsigned char msb) {
     return (msb << 8) | lsb;
 }
 
-// a function that calculates the two's complement to get signs for variables
-int twosComplementToDecimal(int num, int bits) {
-    // If the leftmost bit is 1, it's a negative number
-    if (num & (1 << (bits - 1))) {
-        // Convert from 2's complement to negative decimal
-        num = num - (1 << bits);
-    }
-    return num;
-}
-
 // a function that gets the x axis value
-int mag_get_x() {
+int16_t mag_get_x() {
     // read the lsb and the msb from the sensor
-    int lsb = read_SPI1(MAGXLSB);
-    int msb = read_SPI1(MAGXMSB);
+    int16_t lsb = read_SPI1(MAGXLSB);
+    int16_t msb = read_SPI1(MAGXMSB);
 
     lsb = (lsb & 0b11111000); // masking
-    int x = join_msb_lsb(lsb, msb); // merging the lsb and the msb
+    int16_t x = join_msb_lsb(lsb, msb); // merging the lsb and the msb
     x /= 8; // deleting the first unnecessary first 0s
     
     //fixing signs and returning the data
-    return twosComplementToDecimal(x, 13);
+    return x;
 }
 
 // a function that gets the y axis value
-int mag_get_y() {
+int16_t mag_get_y() {
         // read the lsb and the msb from the sensor
-    int lsb = read_SPI1(MAGYLSB);
-    int msb = read_SPI1(MAGYMSB);
+    int16_t lsb = read_SPI1(MAGYLSB);
+    int16_t msb = read_SPI1(MAGYMSB);
     lsb = (lsb & 0b11111000); // masking
-    int y = join_msb_lsb(lsb, msb); // merging the lsb and the msb
+    int16_t y = join_msb_lsb(lsb, msb); // merging the lsb and the msb
     y /= 8;  // deleting the first unnecessary first 0s
 
     //fixing signs and returning the data
-    return twosComplementToDecimal(y, 13);
+    return y;
 }
 
 // a function that gets the z axis value
-int mag_get_z() {
-    int lsb = read_SPI1(MAGZLSB);
-    int msb = read_SPI1(MAGZMSB);
+int16_t mag_get_z() {
+    int16_t lsb = read_SPI1(MAGZLSB);
+    int16_t msb = read_SPI1(MAGZMSB);
     lsb = (lsb & 0b11111100); // masking
-    int z = join_msb_lsb(lsb, msb); // merging the lsb and the msb
+    int16_t z = join_msb_lsb(lsb, msb); // merging the lsb and the msb
     z /= 4; // deleting the first unnecessary first 0s
 
     //fixing signs and returning the data
-    return twosComplementToDecimal(z, 14);
+    return z;
 }
 
 // Initialize the circular buffer

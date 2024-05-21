@@ -57,6 +57,6 @@ void initCircularBuffer(CircularBuffer *cb);
 int isEmpty(CircularBuffer *cb);
 int isFull(CircularBuffer *cb);
 void enqueue(CircularBuffer *cb, char value);
-char dequeue(CircularBuffer *cb);
+char dequeue(CircularBuffer *cb, char * data);
 
 #endif	/* XC_HEADER_TEMPLATE_H */

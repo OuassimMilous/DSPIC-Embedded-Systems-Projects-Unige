@@ -6,7 +6,6 @@
 //declaring variables
 char msg[BUFFER_SIZE];
 int counter10ms = 0;
-int angle;
 int magX = 0, magY = 0, magZ = 0;
 CircularBuffer cb;
 
@@ -15,9 +14,9 @@ void __attribute__((__interrupt__, __auto_psv__))_U1TXInterrupt() {
     //resetting the interrupt flag
     IFS0bits.U1TXIF = 0;
     //printing the queued data
-    int data = dequeue(&cb);
-    if (data != -1) {
-        print_UART1(data);
+    int data;
+    if(dequeue(&cb,&data)){
+       U1TXREG = data;
     }
 }
 
@@ -64,7 +63,8 @@ int main(void) {
         // the code inside the if condition works at the rate of 5Hz
         if (counter10ms == 20) {
             // we calculate the angle to the magnetic north then we prepare the String that needs to be printed
-            sprintf(msg, "$MAG,%d,%d,%d*, $YAW,%.3f*", magX, magY, magZ, atan2(magY,magX) * 180.0 / M_PI);
+            int angle = atan2(magY,magX) * 180.0 / M_PI;
+            sprintf(msg, "$MAG,%d,%d,%d*, $YAW,%.3f*", magX, magY, magZ,angle);
             
             // we queue all the characters of the string to be printed to the UART
             int c = 0;
@@ -82,7 +82,7 @@ int main(void) {
             IEC0bits.U1TXIE = 1;
 
             // we force the first print out to make sure our interrupts will be triggered correctly
-            print_UART1(dequeue(&cb));
+            U1TXREG = (dequeue(&cb));
             
             // resetting the data to be recollected again
             magX = 0;

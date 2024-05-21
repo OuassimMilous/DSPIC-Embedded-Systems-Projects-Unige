@@ -173,18 +173,17 @@ void init_UART1() {
 
 // a function to print one character through UART
 void print_UART1(unsigned char msg) {
-    while (!U1STAbits.TRMT);
     U1TXREG = msg;
 }
 
-//// a function to print multiple character through UART
-//void print_buffer_UART1(char buffer[]) {
-//    int j = 0;
-//    while (buffer[j] != '\0') {
-//        print_UART1(buffer[j]);
-//        j++;
-//    }
-//}
+// a function to print multiple character through UART
+void print_buffer_UART1(char buffer[]) {
+    int j = 0;
+    while (buffer[j] != '\0') {
+        print_UART1(buffer[j]);
+        j++;
+    }
+}
 
 // a function to recieve one char from SPI
 static unsigned char recieve_SPI1() {
@@ -314,12 +313,13 @@ void enqueue(CircularBuffer *cb, char value) {
 }
 
 // Dequeue an element from the circular buffer
-char dequeue(CircularBuffer *cb) {
+char dequeue(CircularBuffer *cb, char *value) {
     if (isEmpty(cb)) {
-        return -1; // Assuming -1 represents an error condition
+        return 0; // Assuming 0 represents an error condition
     }
-    int value = cb->buffer[cb->tail];
+    value = cb->buffer[cb->tail];
     cb->tail = (cb->tail + 1) % BUFFER_SIZE;
     cb->count--;
-    return value;
+    
+    return 1; // Assuming 1 represents a successful condition
 }

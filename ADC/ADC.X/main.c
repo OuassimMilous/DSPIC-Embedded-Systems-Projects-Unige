@@ -2,6 +2,21 @@
 #include "tools.h"
 #include <stdio.h>
 #include <math.h>
+CircularBuffer cb;
+
+
+// an interrupt triggered when the UART is ready to print
+void __attribute__((__interrupt__, __auto_psv__))_U1TXInterrupt() {
+    //resetting the interrupt flag
+    IFS0bits.U1TXIF = 0;
+    //printing the queued data
+    int data = dequeue(&cb);
+    if(data!=-1){
+        U1TXREG = data;
+    }
+
+}
+
 
 
 int main(void) {
@@ -29,16 +44,26 @@ int main(void) {
     
     
     
+        init_UART1();
+
+        //enabling the TX interrupt, it is triggered when UART is available for printing
+    U1STAbits.UTXISEL0 = 0;
+    U1STAbits.UTXISEL1 = 0;
+    IEC0bits.U1TXIE = 1;
     
     
-    init_UART1();
     
-    unsigned char m[50];
+        initCircularBuffer(&cb);
+
+    
+    unsigned char m[BUFFER_SIZE];
     int ADCIR,ADCbattery;
     double battery,distance;
     
     AD1CON1bits.SAMP = 1;
-
+    
+    tmr_setup_period(TIMER1, 1);
+    int i = 0;
     while (1) {
            
         AD1CON1bits.DONE = 0;
@@ -54,10 +79,35 @@ int main(void) {
 
         battery = y*3;
         
-        sprintf(m, "Value: %.2f, Battery: %.2f", distance*100, battery); // Format the output
+        if(i==100){
+            
+            sprintf(m, "$SENS,%.2f,%.2f*", distance*100, battery); // Format the output            
+            
+             // we queue all the characters of the string to be printed to the UART
+            int c = 0;
+            //we disable the TX interrupt flag to make sure won't have an interrupt while updating the buffer.
+            IEC0bits.U1TXIE = 0;
+            do {
+                enqueue(&cb, m[c]);
+                c++;
+            } while (m[c] != '\0');
+            
+            // separating prints by a space
+            enqueue(&cb, ' ');
+            
+            //we re-enable the interrupt when we are out of critical area
+            IEC0bits.U1TXIE = 1;
+            
+            char data;
+            // we force the first print out to make sure our interrupts will be triggered correctly
+            U1TXREG = dequeue(&cb);           
+            
 
-        print_buffer_UART1(m);
-        tmr_wait_ms(TIMER1,300);
+            i = 0;       
+        }
+
+        tmr_wait_period(TIMER1);
+        i++;
    }
 
     return 0;

@@ -314,13 +314,13 @@ void enqueue(CircularBuffer *cb, char value) {
 }
 
 // Dequeue an element from the circular buffer
-char dequeue(CircularBuffer *cb, char *value) {
+int dequeue(CircularBuffer *cb) {
     if (isEmpty(cb)) {
-        return 0; // Assuming 0 represents an error condition
+        return -1; // Assuming 0 represents an error condition
     }
-    value = cb->buffer[cb->tail];
+    int value = cb->buffer[cb->tail];
     cb->tail = (cb->tail + 1) % BUFFER_SIZE;
     cb->count--;
     
-    return 1; // Assuming 1 represents a successful condition
+    return value; // Assuming 1 represents a successful condition
 }

@@ -31,14 +31,14 @@ int main(void) {
     
     AD1CON2bits.CSCNA = 1; // scan mode  
     AD1CON2bits.SMPI = 1;
-    AD1CSSLbits.CSS5 = 1;
+    AD1CSSLbits.CSS15 = 1;
     AD1CSSLbits.CSS11 = 1;
     
-    ANSELBbits.ANSB5 = 1;
+    ANSELBbits.ANSB15 = 1;
     ANSELBbits.ANSB11 = 1;
     
     TRISBbits.TRISB11 = 1;
-    TRISBbits.TRISB5 = 1;
+    TRISBbits.TRISB15 = 1;
     
     AD1CON1bits.ADON = 1;
     
@@ -69,8 +69,8 @@ int main(void) {
         AD1CON1bits.DONE = 0;
         while (!AD1CON1bits.DONE);
         
-        ADCIR=ADC1BUF0;
-        ADCbattery=ADC1BUF1;
+        ADCIR=ADC1BUF1;
+        ADCbattery=ADC1BUF0;
 
         double x = ADCIR *3.3/1023;     
         distance =  2.34 - 4.74 * x + 4.06 * pow(x, 2) - 1.6 * pow(x, 3) + 0.24 * pow(x, 4);
@@ -81,7 +81,8 @@ int main(void) {
         
         if(i==100){
             
-            sprintf(m, "$SENS,%.2f,%.2f*", distance*100, battery); // Format the output            
+            sprintf(m, "$SENS,%.2f,%.2f*", distance*100, battery); // Format the output
+            
             
              // we queue all the characters of the string to be printed to the UART
             int c = 0;
@@ -113,24 +114,3 @@ int main(void) {
     return 0;
 }
 
-
-
-
-/*
- 
- 
-    AD1CON3bits.ADCS = 8;
-    AD1CON1bits.ASAM = 0;
-    AD1CON1bits.SSRC = 0;
-    AD1CON2bits.CHPS = 0;
- * 
- * 
-    AD1CHS0bits.CH0SA = 11;
-
-    ANSELBbits.ANSB11 = 1;
-    AD1CON1bits.ADON = 1;
-    TRISBbits.TRISB11 = 1;
-
-
- 
- */

@@ -38,7 +38,13 @@
 #define BACKWARDS 2 
 #define RIGHT 3 
 #define LEFT 4 
-#define STOP 5 
+
+
+#define FORWARD 1 
+#define BACKWARDS 2 
+#define RIGHT 3 
+#define LEFT 4 
+
 
 #define PWMFREQUENCY 7200
 
@@ -72,6 +78,10 @@ int isFull(CircularBuffer *cb);
 void enqueue(CircularBuffer *cb, char value);
 int dequeue(CircularBuffer *cb);
 
-int move(int dir, int speed);
+void init_adc();
+
+void set_up_PWM_wheels();
+void move(int dir, int speed);
+void stop_moving();
 
 #endif	/* XC_HEADER_TEMPLATE_H */

@@ -326,6 +326,66 @@ int dequeue(CircularBuffer *cb) {
 }
 
 
+int init_adc(){
+    
+    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
+
+    AD1CON3bits.ADCS = 8;
+    AD1CON1bits.ASAM = 1;
+    AD1CON1bits.SSRC = 7;
+    AD1CON3bits.SAMC = 16;
+    AD1CON2bits.CHPS = 0;
+    
+    AD1CON2bits.CSCNA = 1; // scan mode  
+    AD1CON2bits.SMPI = 1;
+    
+    AD1CSSLbits.CSS15 = 1;
+    AD1CSSLbits.CSS11 = 1;
+    
+    ANSELBbits.ANSB15 = 1;
+    ANSELBbits.ANSB11 = 1;
+    
+    TRISBbits.TRISB11 = 1;
+    TRISBbits.TRISB15 = 1;
+    
+    AD1CON1bits.ADON = 1;
+    
+    
+    
+    AD1CON1bits.SAMP = 1;
+
+}
+int set_up_PWM_wheels(){
+    OC1CON1 = OC1CON2 = OC2CON1 = OC2CON2 = OC3CON1 = OC3CON2 = OC4CON1 = OC4CON2 = 0;
+
+    // select input clock for the OC1 module
+    OC1CON1bits.OCTSEL = 7; 
+    OC2CON1bits.OCTSEL = 7; 
+    OC3CON1bits.OCTSEL = 7;
+    OC4CON1bits.OCTSEL = 7;
+
+    // setting the OCMs as Edge-Aligned
+    OC1CON1bits.OCM = 0b110;
+    OC2CON1bits.OCM = 0b110;
+    OC3CON1bits.OCM = 0b110;
+    OC4CON1bits.OCM = 0b110;
+
+    // no sync needed
+    OC1CON2bits.SYNCSEL = 0x1F;
+    OC2CON2bits.SYNCSEL = 0x1F;
+    OC3CON2bits.SYNCSEL = 0x1F;
+    OC4CON2bits.SYNCSEL = 0x1F;
+
+    // Remapping pins
+    RPOR0bits.RP65R = 0b010000; // RD1 is RP65
+    RPOR1bits.RP66R = 0b010001; // RD2 is RP66
+    RPOR1bits.RP67R = 0b010010; // RD3 is RP67
+    RPOR2bits.RP68R = 0b010011; // RD4 is RP68
+    
+    OC1RS = OC2RS = OC3RS = OC4RS = PWMFREQUENCY; // Tpwm/Tcy = 7200 with Tpwm = 1/10kHz  number of TMR pulse is equal to 7200 to match the frequency of 10kHz
+
+}    
+
 
 int move(int dir, int speed){
     switch(dir){
@@ -363,14 +423,13 @@ int move(int dir, int speed){
         
             break;
             
-                    
-        case STOP: 
-            
-            LEFTF  = 0;
-            LEFTB  = 0;
-            RIGHTF  = 0;
-            RIGHTB  = 0;
-        
-            break;
     }
+    
+}
+
+int stop_moving(){
+    LEFTF  = 0;
+    LEFTB  = 0;
+    RIGHTF  = 0;
+    RIGHTB  = 0;
 }

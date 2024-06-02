@@ -328,15 +328,15 @@ void enqueue(CircularBuffer *cb, char value) {
 }
 
 // Dequeue an element from the circular buffer
-int dequeue(CircularBuffer *cb) {
+int dequeue(CircularBuffer *cb, char *value) {
     if (isEmpty(cb)) {
-        return -1; // Assuming 0 represents an error condition
+        return 0; // Assuming 0 represents an error condition
     }
-    int value = cb->buffer[cb->tail];
+    *value = cb->buffer[cb->tail];
     cb->tail = (cb->tail + 1) % BUFFER_SIZE;
     cb->count--;
     
-    return value; // Assuming 1 represents a successful condition
+    return 1; // Assuming 1 represents a successful condition
 }
 
 
@@ -369,16 +369,17 @@ void CMDenqueue(CMDCircularBuffer *cb, parser_state value) {
 }
 
 // Dequeue an element from the circular buffer
-parser_state CMDdequeue(CMDCircularBuffer *cb) {
+int CMDdequeue(CMDCircularBuffer *cb, parser_state *value) {
     if (CMDisEmpty(cb)) {
-//        return -1; // Assuming 0 represents an error condition
+        return 0; // Assuming 0 represents an error condition
     }
-    parser_state value = cb->buffer[cb->tail];
+    *value = cb->buffer[cb->tail];
     cb->tail = (cb->tail + 1) % MAX_CMD;
     cb->count--;
     
-    return value; 
+    return 1; 
 }
+
 
 
 
@@ -395,18 +396,19 @@ void init_adc(){
     AD1CON2bits.CSCNA = 1; // scan mode  
     AD1CON2bits.SMPI = 1;
     
-    AD1CSSLbits.CSS15 = 1;
+    AD1CSSLbits.CSS14 = 1;
     AD1CSSLbits.CSS11 = 1;
     
-    ANSELBbits.ANSB15 = 1;
+    ANSELBbits.ANSB14 = 1;
     ANSELBbits.ANSB11 = 1;
     
     TRISBbits.TRISB11 = 1;
-    TRISBbits.TRISB15 = 1;
+    TRISBbits.TRISB14 = 1;
     
     AD1CON1bits.ADON = 1;
     
-    
+    TRISBbits.TRISB9 = 0;
+    IRENABLE = 1;
     
     AD1CON1bits.SAMP = 1;
 
@@ -568,7 +570,7 @@ void get_distance_and_battery(double* distance, double* battery) {
     int ADCbattery = ADC1BUF0;
 
     double x = ADCIR * 3.3 / 1023.0;     
-    *distance = 2.34 - 4.74 * x + 4.06 * pow(x, 2) - 1.6 * pow(x, 3) + 0.24 * pow(x, 4);
+    *distance =(2.34 - 4.74 * x + 4.06 * pow(x, 2) - 1.6 * pow(x, 3) + 0.24 * pow(x, 4))*100;
 
     double y = ADCbattery * 3.3 / 1023.0;     
     *battery = y * 3;
@@ -576,7 +578,7 @@ void get_distance_and_battery(double* distance, double* battery) {
 
 
 
-void enqueue_buffer(char* m, CircularBuffer *cb) {
+void enqueue_buffer(CircularBuffer *cb, char* m) {
     // We queue all the characters of the string to be printed to the UART
     int c = 0;
     // We disable the TX interrupt flag to make sure we won't have an interrupt while updating the buffer.
@@ -592,3 +594,21 @@ void enqueue_buffer(char* m, CircularBuffer *cb) {
     IEC0bits.U1TXIE = 1;
 }
 
+void init_LED(){
+    TRISBbits.TRISB8 = 0; // left side lights
+    TRISFbits.TRISF1 = 0; // right side lights
+    TRISFbits.TRISF0 = 0; // breaks lights
+    TRISGbits.TRISG1 = 0; // low intensity lights
+    TRISAbits.TRISA7 = 0; // beam lights
+    TRISAbits.TRISA0 = 0; // beam lights
+    turnoff_lights(); 
+}
+
+void turnoff_lights(){
+LIGHTLEFT = 0;
+LIGHTRIGHT = 0;
+LIGHTBREAKS = 0;
+LIGHTLOW = 0;
+LIGHTBEAM = 0;
+LED = 0;
+}

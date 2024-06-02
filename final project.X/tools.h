@@ -51,6 +51,19 @@
 #define NO_MESSAGE (0) // no new messages
 
 #define MAX_CMD 10
+#define IRENABLE LATBbits.LATB9
+
+#define LIGHTLEFT LATBbits.LATB8
+#define LIGHTRIGHT LATFbits.LATF1
+#define LIGHTBREAKS LATFbits.LATF0
+#define LIGHTLOW LATGbits.LATG1
+#define LIGHTBEAM LATAbits.LATA7
+#define LED LATAbits.LATA0
+
+#define STATE_WAIT 0
+#define STATE_EXECUTE 1
+#define STATE_EXECUTING 2
+
 
 typedef struct { 
 	int state;
@@ -98,7 +111,8 @@ void initCircularBuffer(CircularBuffer *cb);
 int isEmpty(CircularBuffer *cb);
 int isFull(CircularBuffer *cb);
 void enqueue(CircularBuffer *cb, char value);
-int dequeue(CircularBuffer *cb);
+int dequeue(CircularBuffer *cb, char *value);
+void enqueue_buffer(CircularBuffer *cb, char* m);
 
 
 
@@ -106,7 +120,7 @@ void CMDinitCircularBuffer(CMDCircularBuffer *cb);
 int CMDisEmpty(CMDCircularBuffer *cb);
 int CMDisFull(CMDCircularBuffer *cb);
 void CMDenqueue(CMDCircularBuffer *cb, parser_state value);
-parser_state CMDdequeue(CMDCircularBuffer *cb);
+int CMDdequeue(CMDCircularBuffer *cb, parser_state *value);
 
 
 
@@ -118,6 +132,9 @@ void stop_moving();
 
 void get_distance_and_battery(double* distance, double* battery);
 
+void turnoff_lights();
+
+void init_LED();
 /*
 Requires a pointer to a parser state, and the byte to process.
 returns NEW_MESSAGE if a message has been successfully parsed.

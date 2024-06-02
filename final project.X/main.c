@@ -3,9 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 
-
 parser_state pstate;
-int index = -1;
+int CMDindex = -1;
 int x,y,z;
 int data[4];
 CMDCircularBuffer cbCMD;
@@ -20,8 +19,8 @@ void __attribute__((__interrupt__, __auto_psv__))_U1TXInterrupt() {
     //resetting the interrupt flag
     IFS0bits.U1TXIF = 0;
     //printing the queued data
-    int printable = dequeue(&cb);
-    if(printable!=-1){
+    char printable;
+    if(dequeue(&cb,&printable)){
         U1TXREG = printable;
     }
 
@@ -42,7 +41,7 @@ void __attribute__((__interrupt__, __auto_psv__))_U1RXInterrupt() {
         }else{
             CMDenqueue(&cbCMD,pstate);
             print_buffer_UART1("$MACK,1*");
-            index = (index +1) % MAX_CMD;
+            CMDindex = (CMDindex +1) % MAX_CMD;
         }
 
     }
@@ -93,10 +92,20 @@ int main(void) {
     IFS1bits.INT1IF = 0;
     IEC1bits.INT1IE = 1;
    
-    TRISAbits.TRISA0 = 0;
-    LATAbits.LATA0 = 0;
+//    TRISAbits.TRISA0 = 0;
+//    LATAbits.LATA0 = 0;
+    
+    IRENABLE = 1;
 
-
+    init_LED();
+    
+//    LIGHTLEFT = 1;
+//    LIGHTRIGHT = 1;
+//    LIGHTBREAKS = 1;
+//    LIGHTLOW = 1;
+//    LIGHTBEAM = 1;
+//    LED = 1;
+    
     double battery,distance;
     tmr_setup_period(TIMER2, 1);
     while(1){
@@ -104,20 +113,24 @@ int main(void) {
         get_distance_and_battery(&distance, &battery);
         
         unsigned char m[BUFFER_SIZE];
-
-        sprintf(m, "%.2f ", distance*100); // Format the output
-        if (counter1ms % 60 == 0) {
-            enqueue_buffer(m, &cb);
+        sprintf(m, "$MBATT,%.2f*", battery); // Format the output
+        if (counter1ms % 1000 == 0) {
+            enqueue_buffer(&cb, m);
         }
-           
+        sprintf(m, "$MDIST,%.2f*", distance); // Format the output
+        if (counter1ms % 100 == 0) {
+            enqueue_buffer(&cb, m);
+        }
+        
+        
         switch(state){
-            case 0:
+            case STATE_WAIT:
                 break;
-            case 1:                
+            case STATE_EXECUTE:                
                 if (!CMDisEmpty(&cbCMD)) {       
                   int nxt = 0;
                   parser_state temp;
-                  temp = CMDdequeue(&cbCMD);
+                  CMDdequeue(&cbCMD,&temp);
                   for (int i = 0; nxt < temp.index_payload;i++) {
                       data[i] = extract_integer(&temp.msg_payload[nxt]);
                       nxt = next_value(&temp.msg_payload, nxt);
@@ -125,6 +138,8 @@ int main(void) {
                   }
                 }  
             break;
+            case STATE_EXECUTING:
+                break;
 
         }
           

@@ -1,6 +1,7 @@
 #include "xc.h"
 #include "tools.h"
-
+#include <math.h>
+#include <stdbool.h>
 // a function to set up a period for a timer
 void tmr_setup_period(int8_t timer, int ms) {
     //selecting the timer
@@ -156,7 +157,7 @@ void init_SPI1() {
 }
 
 // initializing the UART
-void init_UART1() {
+void init_UART1(bool en_tx, bool en_rx) {
     // remap input pin U1RXR to RD11
     TRISDbits.TRISD11 = 1;
     RPINR18bits.U1RXR = 75;
@@ -168,7 +169,20 @@ void init_UART1() {
     U1BRG = 468; // 72M / (16 * 9600) - 1
     U1MODEbits.UARTEN = 1; // enable UART
     U1STAbits.UTXEN = 1;
-
+    
+    if(en_tx){
+        //enabling the TX interrupt, it is triggered when UART is available for printing
+        U1STAbits.UTXISEL0 = 0;
+        U1STAbits.UTXISEL1 = 0;
+        IEC0bits.U1TXIE = 1;
+    }
+    
+    if(en_rx){
+        //enabling the RX interrupt, it is triggered when UART is available for printing
+        U1STAbits.URXISEL0 = 0;
+        U1STAbits.URXISEL1 = 0;
+        IEC0bits.U1RXIE = 1;
+    }
 }
 
 // a function to print one character through UART
@@ -544,3 +558,37 @@ int next_value(const char* msg, int i) {
         i++;
     return i;
 }
+
+
+void get_distance_and_battery(double* distance, double* battery) {
+    AD1CON1bits.DONE = 0;
+    while (!AD1CON1bits.DONE);
+
+    int ADCIR = ADC1BUF1;
+    int ADCbattery = ADC1BUF0;
+
+    double x = ADCIR * 3.3 / 1023.0;     
+    *distance = 2.34 - 4.74 * x + 4.06 * pow(x, 2) - 1.6 * pow(x, 3) + 0.24 * pow(x, 4);
+
+    double y = ADCbattery * 3.3 / 1023.0;     
+    *battery = y * 3;
+}
+
+
+
+void enqueue_buffer(char* m, CircularBuffer *cb) {
+    // We queue all the characters of the string to be printed to the UART
+    int c = 0;
+    // We disable the TX interrupt flag to make sure we won't have an interrupt while updating the buffer.
+    IEC0bits.U1TXIE = 0;
+    do {
+        enqueue(cb, m[c]);
+        c++;
+    } while (m[c] != '\0');
+    
+    // set the flag manually to start printing
+    IFS0bits.U1TXIF = 1;
+    // We re-enable the interrupt when we are out of critical area
+    IEC0bits.U1TXIE = 1;
+}
+

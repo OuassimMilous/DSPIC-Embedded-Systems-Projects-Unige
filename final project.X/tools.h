@@ -2,6 +2,7 @@
 #define	XC_HEADER_TEMPLATE_H
 
 #include <xc.h> 
+#include <stdbool.h>
 
 //defining constants
 #define TIMER1 1
@@ -79,20 +80,11 @@ typedef struct {
 } CMDCircularBuffer;
 
 
-//typedef struct {
-//    parser_state buffer[BUFFER_SIZE_CMD];
-//    int head;
-//    int tail;
-//    int count;
-//} CircularBufferCMD;
-
-
-
 // Function prototypes
 void tmr_setup_period(int8_t timer, int ms);
 int tmr_wait_period(int8_t timer);
 void tmr_wait_ms(int8_t timer, int ms);
-void init_UART1();
+void init_UART1(bool en_tx, bool en_rx);
 void print_UART1(unsigned char msg);
 void print_buffer_UART1(char buffer[]);
 void init_SPI1();
@@ -124,7 +116,7 @@ void set_up_PWM_wheels();
 void move(int dir, int speed);
 void stop_moving();
 
-
+void get_distance_and_battery(double* distance, double* battery);
 
 /*
 Requires a pointer to a parser state, and the byte to process.

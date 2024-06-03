@@ -590,6 +590,13 @@ void enqueue_buffer(CircularBuffer *cb, char* m) {
     
     // set the flag manually to start printing
     IFS0bits.U1TXIF = 1;
+
+//    if
+//    enqueue(&
+//    char printable;
+//    if(dequeue(&cb,&printable)){
+//        U1TXREG = printable;
+//    }
     // We re-enable the interrupt when we are out of critical area
     IEC0bits.U1TXIE = 1;
 }

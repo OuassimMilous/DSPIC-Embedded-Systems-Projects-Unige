@@ -2,17 +2,18 @@
 #include "tools.h"
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 parser_state pstate;
-int CMDindex = -1;
-int x,y,z;
-int data[4];
+int data[2];
+
 CMDCircularBuffer cbCMD;
 CircularBuffer cb;
 
-int state=0;
+int state=STATE_WAIT;
 
 int counter1ms=0;
+int counterMotor = 0;
 
 // an interrupt triggered when the UART is ready to print
 void __attribute__((__interrupt__, __auto_psv__))_U1TXInterrupt() {
@@ -39,9 +40,11 @@ void __attribute__((__interrupt__, __auto_psv__))_U1RXInterrupt() {
             print_buffer_UART1("$MACK,0*");
 
         }else{
-            CMDenqueue(&cbCMD,pstate);
-            print_buffer_UART1("$MACK,1*");
-            CMDindex = (CMDindex +1) % MAX_CMD;
+            if(strcmp(pstate.msg_type, "PCCMD") == 0){
+                CMDenqueue(&cbCMD,pstate);
+                print_buffer_UART1("$MACK,1*");
+            }
+           
         }
 
     }
@@ -55,6 +58,7 @@ void __attribute__((__interrupt__, __auto_psv__))_T1Interrupt() {
     T1CONbits.TON = 0;   
     
     if (PORTEbits.RE8 == 1) {
+        
         state = !state;
     }
 
@@ -91,6 +95,8 @@ int main(void) {
     INTCON2bits.GIE = 1;
     IFS1bits.INT1IF = 0;
     IEC1bits.INT1IE = 1;
+    
+    set_up_PWM_wheels();
    
 //    TRISAbits.TRISA0 = 0;
 //    LATAbits.LATA0 = 0;
@@ -108,25 +114,44 @@ int main(void) {
     
     double battery,distance;
     tmr_setup_period(TIMER2, 1);
+
     while(1){
         
         get_distance_and_battery(&distance, &battery);
-        
+
         unsigned char m[BUFFER_SIZE];
-        sprintf(m, "$MBATT,%.2f*", battery); // Format the output
         if (counter1ms % 1000 == 0) {
+
+            sprintf(m, "$MBATT,%.2f*$MDIST,%.2f*", battery, distance); // Format the output
             enqueue_buffer(&cb, m);
-        }
-        sprintf(m, "$MDIST,%.2f*", distance); // Format the output
-        if (counter1ms % 100 == 0) {
-            enqueue_buffer(&cb, m);
+            counter1ms = 0; 
+        }else if (counter1ms % 100 == 0){
+            sprintf(m, "$MDIST,%.2f*", distance); // Format the output
+            enqueue_buffer(&cb, m);          
+           
+
         }
         
+
+
         
         switch(state){
             case STATE_WAIT:
+                stop_moving();
+                if (counter1ms % 500 == 0) {
+                    LED = !LED;
+                    LIGHTLEFT = !LIGHTLEFT;
+                    LIGHTRIGHT = !LIGHTRIGHT;
+                }
                 break;
-            case STATE_EXECUTE:                
+            case STATE_EXECUTE:      
+//                turnoff_lights();
+                LIGHTLEFT = 0;
+                LIGHTRIGHT = 0;
+                if (counter1ms % 500 == 0) {
+                    LED = !LED;
+                }
+                
                 if (!CMDisEmpty(&cbCMD)) {       
                   int nxt = 0;
                   parser_state temp;
@@ -134,16 +159,35 @@ int main(void) {
                   for (int i = 0; nxt < temp.index_payload;i++) {
                       data[i] = extract_integer(&temp.msg_payload[nxt]);
                       nxt = next_value(&temp.msg_payload, nxt);
+                      
                       enqueue(&cb,data[i]);
                   }
+                  
+                  state = STATE_EXECUTING;
+                  counterMotor = 0;
+//                                    print_UART1(state);
+
                 }  
             break;
             case STATE_EXECUTING:
+                
+                if(distance >= 20 ){
+                    move(data[0],PWMFREQUENCY * 50);
+                }else{
+                    stop_moving();
+                }
+                
+                if(counterMotor %(data[1]) == 0){
+                    state = STATE_EXECUTE;
+                    stop_moving();
+                }
+                        
+              
                 break;
 
         }
-          
         counter1ms++;
+        counterMotor++;
         tmr_wait_period(TIMER2);
     }
     

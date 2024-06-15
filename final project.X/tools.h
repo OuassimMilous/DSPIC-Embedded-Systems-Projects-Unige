@@ -12,7 +12,6 @@
 #define BUFFER_SIZE_CMD 10
 
 //defining registers
-
 #define MAGCHIPID 0x40
 #define MAGSLEEPMODE 0x4B
 #define MAGOPMODE 0x4C
@@ -31,7 +30,6 @@
 
 #define RIGHTB OC1R 
 #define RIGHTF OC2R 
-
 #define LEFTB OC3R 
 #define LEFTF OC4R 
 
@@ -60,22 +58,21 @@
 #define LIGHTBEAM LATAbits.LATA7
 #define LED LATAbits.LATA0
 
-#define STATE_WAIT 0
-#define STATE_EXECUTE 1
-#define STATE_EXECUTING 2
+#define STATE_WAIT 0 // the car is waiting for commands
+#define STATE_EXECUTE 1 // the car is parsing the commands and ordering the robot to start executing
+#define STATE_EXECUTING 2 // the car is moving
 
-
-typedef struct { 
-	int state;
-	char msg_type[6]; // type is 5 chars + string terminator
-	char msg_payload[100];  // assume payload cannot be longer than 100 chars
-	int index_type;
-	int index_payload;
+typedef struct {
+    int state;
+    char msg_type[6]; // type is 5 chars + string terminator
+    char msg_payload[100]; // assume payload cannot be longer than 100 chars
+    int index_type;
+    int index_payload;
 } parser_state;
 
 
-        
 //defining structs
+
 typedef struct {
     char buffer[BUFFER_SIZE];
     int head;
@@ -83,8 +80,9 @@ typedef struct {
     int count;
 } CircularBuffer;
 
-      
+
 //defining structs
+
 typedef struct {
     parser_state buffer[MAX_CMD];
     int head;
@@ -122,8 +120,6 @@ int CMDisFull(CMDCircularBuffer *cb);
 void CMDenqueue(CMDCircularBuffer *cb, parser_state value);
 int CMDdequeue(CMDCircularBuffer *cb, parser_state *value);
 
-
-
 void init_adc();
 
 void set_up_PWM_wheels();
@@ -140,20 +136,20 @@ Requires a pointer to a parser state, and the byte to process.
 returns NEW_MESSAGE if a message has been successfully parsed.
 The result can be found in msg_type and msg_payload.
 Parsing another byte will override the contents of those arrays.
-*/
+ */
 int parse_byte(parser_state* ps, char byte);
 
 /*
 Takes a string as input, and converts it to an integer. Stops parsing when reaching
 the end of string or a ","
 the result is undefined if a wrong string is passed
-*/
+ */
 int extract_integer(const char* str);
 
 /*
 The function takes a string, and an index within the string, and returns the index where the next data can be found
 Example: with the string "10,20,30", and i=0 it will return 3. With the same string and i=3, it will return 6.
-*/  
+ */
 int next_value(const char* msg, int i);
 
 

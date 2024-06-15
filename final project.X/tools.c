@@ -2,6 +2,7 @@
 #include "tools.h"
 #include <math.h>
 #include <stdbool.h>
+
 // a function to set up a period for a timer
 void tmr_setup_period(int8_t timer, int ms) {
     //selecting the timer
@@ -157,10 +158,11 @@ void init_SPI1() {
 }
 
 // initializing the UART
-void init_UART1(bool en_tx, bool en_rx) {
-    // remap input pin U1RXR to RD11
+void init_UART1(bool en_tx, bool en_rx) {  
+    // remap input pin U1RX to RD11
     TRISDbits.TRISD11 = 1;
     RPINR18bits.U1RXR = 75;
+    
     // remap output pin U1TX to RD0
     TRISDbits.TRISD0 = 0;
     RPOR0bits.RP64R = 1;
@@ -168,7 +170,7 @@ void init_UART1(bool en_tx, bool en_rx) {
     //configuring the UART
     U1BRG = 468; // 72M / (16 * 9600) - 1
     U1MODEbits.UARTEN = 1; // enable UART
-    U1STAbits.UTXEN = 1;
+    U1STAbits.UTXEN = 1; // enabling transmission
     
     if(en_tx){
         //enabling the TX interrupt, it is triggered when UART is available for printing
@@ -178,29 +180,14 @@ void init_UART1(bool en_tx, bool en_rx) {
     }
     
     if(en_rx){
-        //enabling the RX interrupt, it is triggered when UART is available for printing
+        //enabling the RX interrupt, it is triggered when UART is available for receiving
         U1STAbits.URXISEL0 = 0;
         U1STAbits.URXISEL1 = 0;
         IEC0bits.U1RXIE = 1;
     }
 }
 
-// a function to print one character through UART
-void print_UART1(unsigned char msg) {
-    while(!U1STAbits.TRMT);
-    U1TXREG = msg;
-}
-
-// a function to print multiple character through UART
-void print_buffer_UART1(char buffer[]) {
-    int j = 0;
-    while (buffer[j] != '\0') {
-        print_UART1(buffer[j]);
-        j++;
-    }
-}
-
-// a function to recieve one char from SPI
+// a function to receive one char from SPI
 static unsigned char recieve_SPI1() {
     //waits until the reading buffer is available
     while (SPI1STATbits.SPIRBF == 0);
@@ -339,8 +326,6 @@ int dequeue(CircularBuffer *cb, char *value) {
     return 1; // Assuming 1 represents a successful condition
 }
 
-
-
 // Initialize the circular buffer
 void CMDinitCircularBuffer(CMDCircularBuffer *cb) {
     cb->head = 0;
@@ -380,37 +365,33 @@ int CMDdequeue(CMDCircularBuffer *cb, parser_state *value) {
     return 1; 
 }
 
-
-
-
 void init_adc(){
+    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
     
-//    ANSELA = ANSELB = ANSELC = ANSELD = ANSELE = ANSELG = 0x0000;
-
-    AD1CON3bits.ADCS = 8;
-    AD1CON1bits.ASAM = 1;
-    AD1CON1bits.SSRC = 7;
-    AD1CON3bits.SAMC = 16;
-    AD1CON2bits.CHPS = 0;
+    //automatic starting automatic ending
+    AD1CON3bits.ADCS = 8; // choosing the size of the TAD
+    AD1CON1bits.ASAM = 1; // automatic sampling
+    AD1CON1bits.SSRC = 7; // automatic conversion
+    AD1CON3bits.SAMC = 16; // sampling size in TAD
     
+    AD1CON2bits.CHPS = 0; // selecting channel 0
     AD1CON2bits.CSCNA = 1; // scan mode  
-    AD1CON2bits.SMPI = 1;
+    AD1CON2bits.SMPI = 1; //number of conversions we scan
     
-    AD1CSSLbits.CSS14 = 1;
-    AD1CSSLbits.CSS11 = 1;
+    AD1CSSLbits.CSS14 = 1; // activating RB14 for the IR sensor
+    AD1CSSLbits.CSS11 = 1; // activating RB11 for the battery
     
-    ANSELBbits.ANSB14 = 1;
-    ANSELBbits.ANSB11 = 1;
+    ANSELBbits.ANSB14 = 1; // setting the RB14 bit to be an analog pin
+    ANSELBbits.ANSB11 = 1; // setting the RB11 bit to be an analog pin
     
-    TRISBbits.TRISB11 = 1;
-    TRISBbits.TRISB14 = 1;
+    TRISBbits.TRISB11 = 1; // setting the RB11 as input
+    TRISBbits.TRISB14 = 1; // setting the RB14 as input
     
-    AD1CON1bits.ADON = 1;
+    AD1CON1bits.ADON = 1; // starting the ADC
     
-    TRISBbits.TRISB9 = 0;
+    // enabling the IR sensor
+    TRISBbits.TRISB9 = 0; 
     IRENABLE = 1;
-    
-    AD1CON1bits.SAMP = 1;
 
 }
 void set_up_PWM_wheels(){
@@ -440,8 +421,8 @@ void set_up_PWM_wheels(){
     RPOR1bits.RP67R = 0b010010; // RD3 is RP67
     RPOR2bits.RP68R = 0b010011; // RD4 is RP68
     
-    OC1RS = OC2RS = OC3RS = OC4RS = PWMFREQUENCY; // Tpwm/Tcy = 7200 with Tpwm = 1/10kHz  number of TMR pulse is equal to 7200 to match the frequency of 10kHz
-
+    // Tpwm/Tcy = 7200 with Tpwm = 1/10kHz  number of TMR pulse is equal to 7200 to match the frequency of 10kHz
+    OC1RS = OC2RS = OC3RS = OC4RS = PWMFREQUENCY; 
 }    
 
 
@@ -561,7 +542,6 @@ int next_value(const char* msg, int i) {
     return i;
 }
 
-
 void get_distance_and_battery(double* distance, double* battery) {
     AD1CON1bits.DONE = 0;
     while (!AD1CON1bits.DONE);
@@ -576,8 +556,6 @@ void get_distance_and_battery(double* distance, double* battery) {
     *battery = y * 3;
 }
 
-
-
 void enqueue_buffer(CircularBuffer *cb, char* m) {
     // We queue all the characters of the string to be printed to the UART
     int c = 0;
@@ -588,15 +566,6 @@ void enqueue_buffer(CircularBuffer *cb, char* m) {
         c++;
     } while (m[c] != '\0');
     
-    // set the flag manually to start printing
-    IFS0bits.U1TXIF = 1;
-
-//    if
-//    enqueue(&
-//    char printable;
-//    if(dequeue(&cb,&printable)){
-//        U1TXREG = printable;
-//    }
     // We re-enable the interrupt when we are out of critical area
     IEC0bits.U1TXIE = 1;
 }
@@ -612,10 +581,10 @@ void init_LED(){
 }
 
 void turnoff_lights(){
-LIGHTLEFT = 0;
-LIGHTRIGHT = 0;
-LIGHTBREAKS = 0;
-LIGHTLOW = 0;
-LIGHTBEAM = 0;
-LED = 0;
+    LIGHTLEFT = 0;
+    LIGHTRIGHT = 0;
+    LIGHTBREAKS = 0;
+    LIGHTLOW = 0;
+    LIGHTBEAM = 0;
+    LED = 0;
 }
